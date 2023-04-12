@@ -204,5 +204,4 @@ for filename in filenames[:]:
 processed_filenames = glob.glob(data_save_path +'*')
 for filename in processed_filenames:
     #print("Plotting: {}".format(filename))
-    #plot_file(filename, figure_save_path)
-    pass
+    plot_file(filename, figure_save_path)
