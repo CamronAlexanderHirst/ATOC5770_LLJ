@@ -9,31 +9,16 @@ import pickle
 import numpy as np                  # For doing math
 import matplotlib
 import matplotlib.pyplot as plt     # For plotting
-import matplotlib.dates as mdates   # For formatting dates when plotting
-import matplotlib.colors as colors  # For truncating colorbars
-import matplotlib.style as style
+
 import xarray as xr                 # For dealing with netCDF data
 import pandas as pd                 # A quick way to deal with time stamps
 #import netCDF4 as nc                # Another way to deal with netCDF data
 import glob
-import datetime
-import matplotlib.units as munits
-import scipy.interpolate
-import scipy.signal as sig
-import scipy.stats as stats
-import sys
-import scipy.io as sio
-
 from scipy.optimize import curve_fit
 # from netCDF4 import Dataset
-from matplotlib import colors as mcolors
-from scipy.signal import savgol_filter
-from scipy.stats import binned_statistic
-from matplotlib.gridspec import GridSpec
-from numpy.random import seed
-from numpy.random import rand
+
 from scipy.optimize import curve_fit
-# matplotlib.use('TKAgg')
+from dateutil import tz
 
 print('Done importing modules now')
 
@@ -90,14 +75,15 @@ def process_file(filename, data_save_path):
 
     # get input - output data for each unique altitude:
     unique_altitudes = sorted(df['measurement_altitude'].unique())
-    # print("\ngot unique altitudes")
 
     WS = []
     WD = []
     Altitude = []
     Time = []
+
+    # to_zone = tz.gettz('America/Chicago')
     timestamp = df.time_offset.values[0]
-    #print(type(timestamp))
+    # timestamp = pd.Timestamp(timestamp).tz_localize("UTC").tz_convert(to_zone)
 
     for i, ua in enumerate(unique_altitudes):
         # print(i)
@@ -116,11 +102,12 @@ def process_file(filename, data_save_path):
         corr = corr_matrix[0,1]
         R_sq = corr**2
         a, b, theta_min = popt[0], popt[1], popt[2]
+        # print(a, b, theta_min)
 
         azimuth_test = np.linspace(0, 2*np.pi, 100)
         predict_test = [f(theta_i, popt[0], popt[1], popt[2]) for theta_i in azimuth_test]
 
-        if date == "20221111" and time == "040020": 
+        if date == "20221111" and time == "023003": 
             plt.figure()
             plt.scatter(azimuth, radial_velocity, label="True", color="black", alpha=0.5)
             plt.plot(azimuth_test, predict_test, color="red", label="Prediction")
@@ -145,7 +132,7 @@ def process_file(filename, data_save_path):
             continue
         else:
             WS.append(b / np.cos(np.deg2rad(target_elevation)))
-            WD.append(np.rad2deg(theta_min))
+            WD.append(np.rad2deg(theta_min)-180)
             Altitude.append(ua)
             Time.append(timestamp)
 
@@ -193,7 +180,6 @@ def plot_file(filename, save_path):
 
 # ------------- Call Fitting and Plotting Scripts -----------------------
 filenames = glob.glob(path_to_data+'/*.cdf')
-# filenames = ['~/Documents/CU Boulder/ATOC 5770/project/data_siteH_b1_ALL/arm.lidar.sgp_s6.ppi.b1.20221216.201538.cdf']
 
 for filename in filenames[:]:
     print("Processing: {}".format(filename))
@@ -201,7 +187,11 @@ for filename in filenames[:]:
     process_file(filename,data_save_path)
     print("Done, processed: in {} seconds".format(time.time()-t0))
 
-processed_filenames = glob.glob(data_save_path +'*')
-for filename in processed_filenames:
-    #print("Plotting: {}".format(filename))
-    plot_file(filename, figure_save_path)
+
+# print("\nPlotting profiles...")
+# t0 = time.time()
+# processed_filenames = glob.glob(data_save_path +'*')
+# for filename in processed_filenames:
+#     print("Plotting: {}".format(filename))
+#     plot_file(filename, figure_save_path)
+# print("Time to plot: {}".format(time.time()-t0))
